@@ -24,6 +24,18 @@ await test('removes multiple secrets without changing surrounding prose', () => 
     assert.equal(stashableBody(cleaned), cleaned);
 });
 
+await test('still finds real secrets in posts that mention "true"', () => {
+    const body = `true story, my token ${githubToken} at https://dev.to/iacobandrei`;
+    assert.deepEqual(
+        findSecrets(body).map((secret) => secret.text),
+        [githubToken],
+    );
+    assert.equal(
+        removeSecrets(body),
+        'true story, my token [REDACTED] at https://dev.to/iacobandrei',
+    );
+});
+
 await test('detects a complete private key block', () => {
     const body =
         '-----BEGIN PRIVATE KEY-----\nAbCdEfGhIjKlMnOp1234567890\n-----END PRIVATE KEY-----';
@@ -36,6 +48,7 @@ await test('preserves ordinary code and obvious placeholder examples', () => {
         '',
         'const id = "a1b2c3d4"; // hello world',
         'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        'Restructuring a legacy app, true story: https://dev.to/iacobandrei/how-i-documented-a-broken-codebase-without-losing-my-mind-74m',
     ]) {
         assert.deepEqual(findSecrets(body), []);
         assert.equal(removeSecrets(body), body);
